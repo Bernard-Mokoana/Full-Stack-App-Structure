@@ -19,8 +19,8 @@ const userSchema =  new Schema({
     password: {
         type: String,
         required: true,
-        minlength: 8,
-        select: false
+        // minlength: 8,
+        // select: false
     }
 },
  {timestamps: true}
@@ -28,12 +28,14 @@ const userSchema =  new Schema({
 
 userSchema.pre("save", async function(next) {
     if(!this.isModified("password")) return next();
+    
     this.password = await bcrypt.hash(this.password, 10);
     next();
 });
 
-userSchema.methods.isPasswordCorrect = async function(password){
+userSchema.methods.isPasswordCorrect = async function (password){
     return await bcrypt.compare(password, this.password)
 }
+
 
 export const User = mongoose.model("User", userSchema);
