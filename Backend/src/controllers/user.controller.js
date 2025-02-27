@@ -52,7 +52,7 @@ const loginInUser = async (req, res) => {
 
     try {
         const user = await User.findOne({
-            $or: [{username}, {email}]
+            $or: [{email}]
         }).select("+password");
     
         if(!user) {
@@ -81,4 +81,4 @@ const loginInUser = async (req, res) => {
 export {
     registerUser,
     loginInUser,
-}
+}   
