@@ -1,10 +1,30 @@
 import { User } from "../models/user.models.js";
+import jwt from "jsonwebtoken";
 
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById(userId);
+
+        if(!user) {
+            return res.status(404).json({message: "User not found!"})
+        }
+
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false });
+
+        return {accessToken, refreshToken};
+    } catch (error) {
+        return res.status(500).json({message: "Something went wrong while generating access and refresh token"});
+    }
+}
 const registerUser = async (req, res) => {
   
-    const {username, email, password} = req.body;
+    const {fullname, lastname,username, email, password} = req.body;
 
-    if(!username || !email || !password) {
+    if(!fullname || !lastname || !username || !email || !password) {
         return res.status(400).json({message: "All fields are required."})
     }
 
@@ -19,6 +39,8 @@ const registerUser = async (req, res) => {
     }
 
      const user = await User.create({
+            fullname,
+            lastname,
             email,
             username: username.toLowerCase(),
             password
@@ -73,9 +95,48 @@ const loginInUser = async (req, res) => {
 
         return res.status(500).json({message: "Something went wrong while logging in"})
     }
-    
+}
 
-  
+const refreshAccessToken = async (req, res) => {
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if(!incomingRefreshToken) {
+        return res.status(401).json("No refresh token provided");
+    }
+
+    try {
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET
+        );
+
+        const user = await User.findById(decodedToken?._id);
+
+        if(!user) {
+            return res.status(401).json({message: "Invalid refresh token"});
+        }
+
+        if(!user) {
+            return res.status(402).json({message: "Invalid refresh token"})
+        }
+
+        // set cookies
+        // const options = {
+        //    httpOnly: true,
+        //    secure: process.env.NODE_ENV === "production",
+       // }
+
+       const { accessToken, refreshAccessToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+
+       return res
+       .status(200)
+       .cookie("accessToken", accessToken, Options)
+       .cookie("refreshToken", newRefreshToken, options)
+       .json({message:  "Access token successfully"}) 
+    //    {accessToken, refreshToken: options}
+    } catch (error) {
+        return res.status(500).json({message: "Something went wrong refreshing access tokem"})
+    }
 }
 
 export {
