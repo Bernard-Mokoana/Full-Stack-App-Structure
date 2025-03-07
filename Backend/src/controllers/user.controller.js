@@ -116,26 +116,26 @@ const refreshAccessToken = async (req, res) => {
             return res.status(401).json({message: "Invalid refresh token"});
         }
 
-        if(!user) {
-            return res.status(402).json({message: "Invalid refresh token"})
+        // set cookies
+         const options = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
         }
 
-        // set cookies
-        // const options = {
-        //    httpOnly: true,
-        //    secure: process.env.NODE_ENV === "production",
-       // }
-
-       const { accessToken, refreshAccessToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+       const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
 
        return res
-       .status(200)
-       .cookie("accessToken", accessToken, Options)
-       .cookie("refreshToken", newRefreshToken, options)
-       .json({message:  "Access token successfully"}) 
-    //    {accessToken, refreshToken: options}
-    } catch (error) {
-        return res.status(500).json({message: "Something went wrong refreshing access tokem"})
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", newRefreshToken, options)
+            .json({ 
+                message: "Access token refreshed successfully", 
+                accessToken, 
+                refreshToken: newRefreshToken 
+            });
+    }
+    catch (error) {
+        return res.status(500).json({message: "Something went wrong refreshing access token"}, error)
     }
 }
 
