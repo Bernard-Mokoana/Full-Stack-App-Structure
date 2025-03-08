@@ -62,7 +62,8 @@ const registerUser = async (req, res) => {
 }
 
 const loginInUser = async (req, res) => {
-    const {username, password, email} = req.body;
+    
+    const {password, email} = req.body;
 
     if(!email) {
        return res.status(400).json({message: "Email is required"})
@@ -87,15 +88,53 @@ const loginInUser = async (req, res) => {
             return res.status(404).json({message: "Invalid credentials"})
         }
 
-        const loggedInUser = await User.findById(user._id).select("-password");
+        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-        return res.status(200).json({message: "User logged in successfully", user: loggedInUser})
-    } catch (error) {
+        const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+
+        if(!loggedInUser) {
+            return res.status(400, "User not logged in");
+        }
+
+        const options = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+        };
+
+        return res
+        .status(200)
+        .json({message: "User logged in successfully", user: loggedInUser})
+    } 
+    catch (error) {
         console.error("Login failed; ", error);
 
         return res.status(500).json({message: "Something went wrong while logging in"})
     }
 }
+
+const logoutUser = async(req, res) => {
+    await User.findByIdAndUpdate(
+    req.user._id,
+    {
+        $set: {
+            refreshToken: undefined,
+        },
+    },
+        { new: true }
+    )
+
+
+const options = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+}
+}
+
+return res
+.status(200)
+.clearCookie("accessToken", options)
+.clearCookie("refreshToken", options)
+.json({message: "User logged out successfully"});
 
 const refreshAccessToken = async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
