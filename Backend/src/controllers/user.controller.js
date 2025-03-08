@@ -1,23 +1,36 @@
 import { User } from "../models/user.models.js";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+
+dotenv.config(
+    {
+        path: "./.env"
+    }
+)
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
         const user = await User.findById(userId);
 
         if(!user) {
-            return res.status(404).json({message: "User not found!"})
+            console.log("User not found");
+            throw new Error("User not found");
+            // return res.status(404).json({message: "User not found!"})
         }
 
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();
+       
 
         user.refreshToken = refreshToken;
         await user.save({ validateBeforeSave: false });
 
+       
         return {accessToken, refreshToken};
     } catch (error) {
-        return res.status(500).json({message: "Something went wrong while generating access and refresh token"});
+        console.log("Something went wrong while generating access and refresh token", error.message);
+        throw error;
+        // return res.status(500).json({message: "Something went wrong while generating access and refresh token"});
     }
 }
 const registerUser = async (req, res) => {
@@ -103,11 +116,12 @@ const loginInUser = async (req, res) => {
 
         return res
         .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
         .json({message: "User logged in successfully", user: loggedInUser})
     } 
     catch (error) {
         console.error("Login failed; ", error);
-
         return res.status(500).json({message: "Something went wrong while logging in"})
     }
 }
@@ -150,6 +164,7 @@ const refreshAccessToken = async (req, res) => {
             process.env.REFRESH_TOKEN_SECRET
         );
 
+      
         const user = await User.findById(decodedToken?._id);
 
         if(!user) {
