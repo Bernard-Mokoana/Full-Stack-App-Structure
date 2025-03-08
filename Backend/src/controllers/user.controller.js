@@ -128,13 +128,14 @@ const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
 }
-}
 
 return res
 .status(200)
 .clearCookie("accessToken", options)
 .clearCookie("refreshToken", options)
 .json({message: "User logged out successfully"});
+
+}
 
 const refreshAccessToken = async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
@@ -155,7 +156,6 @@ const refreshAccessToken = async (req, res) => {
             return res.status(401).json({message: "Invalid refresh token"});
         }
 
-        // set cookies
          const options = {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
@@ -174,11 +174,15 @@ const refreshAccessToken = async (req, res) => {
             });
     }
     catch (error) {
-        return res.status(500).json({message: "Something went wrong refreshing access token"}, error)
+        return res
+        .status(500)
+        .json({message: "Something went wrong refreshing access token"}, error)
     }
 }
 
 export {
     registerUser,
     loginInUser,
+    logoutUser,
+    refreshAccessToken,
 }   
