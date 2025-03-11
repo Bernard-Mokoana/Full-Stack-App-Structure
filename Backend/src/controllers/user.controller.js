@@ -212,9 +212,12 @@ const changeCurrentPassword = async(req, res) => {
 
     await user.save({ validateBeforeSave: false });
 
-    return res.status(200).json({ message: "Password changed successfully"})
+    return res.status(200).json( {} ,{ message: "Password changed successfully"})
 }
 
+const getCurrentUser = async (req, res) => {
+    return res.status(200).json(req.body, { message: "Current user details"})
+}
 
 
 export {
